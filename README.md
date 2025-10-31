@@ -2,7 +2,7 @@
 
 CodePath WEB103 Final Project
 
-Designed and developed by: **Veerendranath, Pranava Sree**
+Designed and developed by: **Veerendranath, Pranava Sree, Mohamed Aweys Abucar**
 
 🔗 Link to deployed app:
 
