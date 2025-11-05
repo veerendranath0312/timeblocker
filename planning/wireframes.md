@@ -4,18 +4,17 @@ Reference the Creating an Entity Relationship Diagram final project guide in the
 
 ## List of Pages
 
-[👉🏾👉🏾👉🏾 List the pages you expect to have in your app, with a ⭐ next to pages you have wireframed]
+- Landing page ⭐
+- Home page ⭐
 
-## Wireframe 1: [page title]
+## Wireframe 1: Landing page
 
-[👉🏾👉🏾👉🏾 include wireframe 1]
+![Landing page wireframe](./wireframes/MacBook%20Pro%2014_%20-%203.png)
 
-## Wireframe 2: [page title]
+## Wireframe 2: Home page
 
-[👉🏾👉🏾👉🏾 include wireframe 2]
+![Home page wireframe](./wireframes/MacBook%20Pro%2014_%20-%201.png)
 
-## Wireframe 3: [page title]
+## Wireframe 3: Home page with Notes Markdown
 
-[👉🏾👉🏾👉🏾 include wireframe 3]
-
-[👉🏾👉🏾👉🏾 include more wireframes as desired]
+![Home page wireframe](./wireframes/MacBook%20Pro%2014_%20-%202.png)
