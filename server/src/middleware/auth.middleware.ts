@@ -7,7 +7,7 @@
  * - Authorization checks (ensuring users have permission to access certain resources)
  * These middleware functions are applied to routes that require authentication.
  */
-// import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 
 // Authentication middleware functions will be implemented here
 // Example:

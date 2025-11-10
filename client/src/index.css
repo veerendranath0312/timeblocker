@@ -1,0 +1,25 @@
+@import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,200..800;1,200..800&family=Geist+Mono:wght@100..900&display=swap');
+@import 'tailwindcss';
+
+:root {
+  --font-family: 'Atkinson Hyperlegible Next', sans-serif;
+  --font-family-mono: 'Geist Mono', monospace;
+
+  --bg-color: #ffffff;
+  --text-color: #000000;
+
+  --color-1: #d9d9d9;
+  --color-2: #dce1fd;
+  --color-3: #f8e8e2;
+  --color-4: #cd2c54;
+  --color-5: #fdef5d;
+  --color-6: #96dbbf;
+  --color-7: #e4c272;
+
+  --color-disabled: #adadad;
+
+  line-height: 1.65;
+  font-weight: 400;
+  scroll-behavior: smooth;
+  font-family: var(--font-family);
+}
