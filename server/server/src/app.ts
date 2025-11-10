@@ -5,12 +5,10 @@
  * This is the main application configuration file that ties together all
  * routes, middleware, and other Express configurations.
  */
-import express, { Express, Request, Response } from 'express';
+import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
-import authRoutes from './routes/auth.routes';
-import errorHandler from './middleware/error.middleware';
-import cookieParser from "cookie-parser";
-
+import authRoutes from './routes/auth.routes.js';
+import errorHandler from './middleware/error.middleware.js';
 
 const app: Express = express();
 
@@ -18,17 +16,16 @@ const app: Express = express();
 app.use(cors()); // Enable CORS for all routes
 app.use(express.json()); // Parse JSON request bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded request bodies
-app.use(cookieParser()); // <-- required for res.cookie
 
 // Routes
-app.get('/', (_req: Request, res: Response) => {
+app.get('/', (req: Request, res: Response) => {
   res.json({ message: 'TimeBlocker API is running' });
 });
 
 app.use('/api/auth', authRoutes);
 
 // 404 handler
-app.use((_req: Request, res: Response) => {
+app.use((req: Request, res: Response) => {
   res.status(404).json({ error: 'Route not found' });
 });
 

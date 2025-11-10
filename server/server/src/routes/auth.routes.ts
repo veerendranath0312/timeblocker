@@ -5,19 +5,11 @@
  * Routes act as the entry point for HTTP requests and delegate to controllers.
  */
 import express, { Router } from 'express';
-import { regularRegistrationController, regularLoginController, oauthLoginController } from '../controllers/auth.controller';
 
 const router: Router = express.Router();
 
 // Authentication routes will be added here
 // Example: router.post('/register', authController.register);
 
-router.post('/regularRegistration', regularRegistrationController)
-router.post('/regularLogin', regularLoginController)
-router.post('/oauthLogin', oauthLoginController)
-
 export default router;
-
-
-
 

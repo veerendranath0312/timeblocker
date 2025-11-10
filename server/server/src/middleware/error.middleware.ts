@@ -13,9 +13,9 @@ interface ErrorWithStatus extends Error {
 
 const errorHandler = (
   err: ErrorWithStatus,
-  _req: Request,
+  req: Request,
   res: Response,
-  _next: NextFunction
+  next: NextFunction
 ): void => {
   // Log error stack trace
   console.error('Error:', err.stack);
