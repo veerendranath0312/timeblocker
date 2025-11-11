@@ -20,6 +20,9 @@ async function createUser() {
 }
 
 describe("Test Regular Auth Endpoints", () => {
+  beforeAll(async () => {
+    await resetDB(testUser.email);
+  })
   it("Make regular user", async () => {
     await createUser();
   });
