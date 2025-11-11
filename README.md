@@ -42,55 +42,34 @@ The core idea is to create the definitive digital version of Newport's system, w
 
 ## Tech Stack
 
-#### Frontend:
+#### Frontend
 
 - React
-- Tailwind CSS
-- React Router
-- React Query
-- Zustand
+- Tailwind CSS - _for styling_
+- React Router - _for routing_
+- React Query - _for data fetching_
+- Zustand - _for state management_
 
-#### Backend:
+#### Backend
 
 - Node.js
 - Express
+- Zod - _for validation_
+- Firebase - _for authentication_
+
+#### Databases
+
 - PostgreSQL
-- Zod
 
 ## Features
 
-### User Management
-
-- [ ] **User Authentication**: Secure sign-up and login for users to create and access their personal planner.
-- [ ] **Data Persistence**: All tasks, notes, and scheduled blocks are saved to the user's account and sync across sessions.
-- [ ] **Two-Panel Interface**: The main screen is a persistent side-by-side layout, with the Collection Page on the left and the Time Block Grid on the right, mirroring the physical planner.
-
-### THe Collection Page (Left Panel - For Capture)
-
-- [ ] **Daily Metrics**: A dedicated field for the user to define and track their key goals or metrics for the day.
-- [ ] **Task List**: A simple list where users can quickly add, view, and check off unstructured to-do items.
-- [ ] **Notes Area**: A free-form text area for capturing miscellaneous thoughts, links, and ideas that are not yet defined tasks.
-- [ ] **Shutdown Complete Checkbox**: A prominent checkbox that allows the user to formally end their workday, reinforcing the "shutdown ritual."
-
-### The Time Block Grid (Right Panel -- For Planning)
-
-- [ ] **Daily Timeline View**: A vertical, single-day calendar view with hourly and sub-hourly time slots (e.g., 9 AM, 10 AM, etc.).
-- [ ] **Create Time Block**: Ability to create a new event or task block directly on the timeline by clicking or dragging on a time slot.
-- [ ] **Edit Time Block Title**: Ability to click on a scheduled block to change its name or description.
-- [ ] **Move Time Block (Drag & Drop)**: Ability to easily reschedule a block by dragging and dropping it to a different time slot, allowing the plan to adapt as the day unfolds.
-- [ ] **Resize Time Block**: Ability to change the duration of a block by dragging its top or bottom edge to make it shorter or longer.
-- [ ] **Delete Time Block**: Ability to remove a block from the schedule entirely.
-- [ ] **Visual Customization**: Option to assign different colors or icons to time blocks to visually categorize types of work (e.g., Deep Work, Meetings, Shallow Work).
-
-### Core Workflow & Interaction
-
-- [ ] **Drag-to-Schedule**: The primary workflow enabling a user to drag a task from the "Task List" on the Collection Page and drop it onto the Time Block Grid to schedule it.
-- [ ] **Task-to-Block Conversion**: When a task is dragged onto the grid, it is automatically converted into a new, editable time block with a default duration.
-
-### Advanced & Post-MVP Features
-
-- [ ] **Routines & Templates**: Ability to create and save recurring daily schedules or common blocks of tasks that can be applied to the timeline with one click.
-- [ ] **Statistics & Progress View**:A feature to visualize how time was spent over the week, based on the categories assigned to time blocks.
+- ✅ User Management
+- ✅ A Landing Page with Log in and Sign Up Features
+- The Home Page
+  - The Collection Page (Left Panel - For Capture)
+  - The Time Block Grid (Right Panel -- For Planning)
+- Core Workflow & Interaction
+- Advanced & Post-MVP Features
 
 ## Installation Instructions
 
