@@ -63,8 +63,14 @@ The core idea is to create the definitive digital version of Newport's system, w
 
 ## Features
 
-- ✅ User Management
 - ✅ A Landing Page with Log in and Sign Up Features
+
+  ![timeblocker](./client/public/timeblocker.gif)
+
+- ✅ User Management
+
+  > Completed the backend part for this feature. Need to integrate it with the frontend.
+
 - The Home Page
   - The Collection Page (Left Panel - For Capture)
   - The Time Block Grid (Right Panel -- For Planning)
