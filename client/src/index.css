@@ -16,6 +16,7 @@
   --color-6: #96dbbf;
   --color-7: #e4c272;
 
+  --color-purple: #782e9a;
   --color-disabled: #adadad;
 
   line-height: 1.65;
@@ -26,4 +27,21 @@
 
 .font-mono {
   font-family: var(--font-family-mono);
+}
+
+/* Custom checkbox with checkmark */
+.custom-checkbox {
+  position: relative;
+}
+
+.custom-checkbox:checked::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(45deg);
+  width: 4px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
 }

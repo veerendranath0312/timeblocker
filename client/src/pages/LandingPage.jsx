@@ -6,7 +6,7 @@ import Carousel from '../components/Carousel';
 function Navbar() {
   return (
     <nav className="p-3 sm:p-4 border-b">
-      <div className="max-w-[1100px] mx-auto flex justify-between items-center px-4 sm:px-0">
+      <div className="max-w-[1500px] mx-auto flex justify-between items-center px-4 sm:px-0">
         <Link to="/" className="text-xl sm:text-2xl font-bold">
           timeblocker
         </Link>
@@ -53,7 +53,7 @@ function LandingPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="max-w-[1100px] mx-auto flex-1 flex flex-col items-center justify-center gap-4 sm:gap-5 px-4 sm:px-6 py-6 sm:py-8">
+      <main className="max-w-[1500px] mx-auto flex-1 flex flex-col items-center justify-center gap-4 sm:gap-5 px-4 sm:px-6 py-6 sm:py-8">
         <div className="flex gap-2 items-center justify-center bg-(--color-1) px-3 sm:px-4 py-1 rounded-4xl text-xs sm:text-sm">
           <Calendar size={14} className="sm:w-4 sm:h-4" />
           <p className="whitespace-nowrap sm:whitespace-normal">
