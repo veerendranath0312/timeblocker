@@ -7,7 +7,7 @@ function Navbar() {
     <nav className="p-3 sm:p-4 border-b">
       <div className="max-w-[1100px] mx-auto flex justify-between items-center px-4 sm:px-0">
         <Link to="/" className="text-xl sm:text-2xl font-bold">
-          Time Blocker
+          timeblocker
         </Link>
       </div>
     </nav>
