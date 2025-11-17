@@ -1,5 +1,22 @@
 @import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,200..800;1,200..800&family=Geist+Mono:wght@100..900&display=swap');
 @import 'tailwindcss';
+@source "../node_modules/streamdown/dist/index.js";
+
+@layer utilities {
+  /* For Chrome, Safari, Edge, and Opera */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* For Firefox */
+  .no-scrollbar {
+    -ms-overflow-style: none; /* Internet Explorer and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+}
+body {
+  background-color: var(--bg-color);
+}
 
 :root {
   --font-family: 'Atkinson Hyperlegible Next', sans-serif;
@@ -17,7 +34,7 @@
   --color-7: #e4c272;
 
   --color-purple: #782e9a;
-  --color-disabled: #adadad;
+  --color-disabled: #888888;
 
   line-height: 1.65;
   font-weight: 400;
@@ -43,5 +60,28 @@
   width: 4px;
   height: 10px;
   border: solid white;
+  border-width: 0 2px 2px 0;
+}
+
+/* Task checkbox with dotted border and checkmark */
+.task-checkbox {
+  position: relative;
+  border-style: dotted !important;
+}
+
+.task-checkbox:checked {
+  background-color: #d1d1d1;
+  border-color: #888888;
+}
+
+.task-checkbox:checked::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(45deg);
+  width: 3px;
+  height: 8px;
+  border: solid #333333;
   border-width: 0 2px 2px 0;
 }

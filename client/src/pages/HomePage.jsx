@@ -1,13 +1,9 @@
+import { useState } from 'react';
 import { Link } from 'react-router';
-import {
-  User,
-  ChevronRight,
-  ChevronLeft,
-  Plus,
-  Minus,
-  SquarePen,
-  Save,
-} from 'lucide-react';
+import { User, ChevronRight, ChevronLeft, Plus, Minus } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/Tabs';
+import Tasks from '../components/Tasks';
+import Notes from '../components/Notes';
 
 function Navbar() {
   return (
@@ -44,6 +40,29 @@ function Footer() {
 }
 
 function HomePage() {
+  const [dailyMetrics, setDailyMetrics] = useState({
+    shutdownComplete: false,
+    deepHours: 0,
+  });
+
+  const incrementDeepHours = () => {
+    setDailyMetrics((prev) => {
+      if (prev.deepHours < 24) {
+        return { ...prev, deepHours: prev.deepHours + 1 };
+      }
+      return prev;
+    });
+  };
+
+  const decrementDeepHours = () => {
+    setDailyMetrics((prev) => {
+      if (prev.deepHours > 0) {
+        return { ...prev, deepHours: prev.deepHours - 1 };
+      }
+      return prev;
+    });
+  };
+
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       <Navbar />
@@ -51,61 +70,69 @@ function HomePage() {
         {/* Collection Page */}
         <div
           id="collection-page"
-          className="w-1/2 h-full flex flex-col overflow-hidden border-r border-black"
+          className="w-1/3 h-full flex flex-col overflow-hidden border-r border-black"
         >
           {/* Collection Page Header */}
-          <div className="m-2 bg-(--color-2) flex justify-between items-center border border-black rounded-lg p-2">
-            <h2 className="text-xl font-bold">Capture tasks and notes</h2>
-            <p className="text-sm text-black">Tuesday, November 4, 2025</p>
+          <div className="m-2 bg-(--color-2) flex flex-wrap justify-between items-center border border-black rounded-lg p-2">
+            {/* <h2 className="text-xl font-bold">Capture tasks and notes</h2> */}
+            <p className="text-lg font-bold text-black">
+              Tuesday, November 4, 2025
+            </p>
           </div>
 
           {/* Daily Metrics */}
-          <div className="m-2 flex justify-between items-center border border-black rounded-lg p-2 shrink-0">
-            <div className="flex items-center justify-center gap-4">
-              <p>Daily Metrics</p>
-              <div className="flex items-center justify-center gap-2">
-                <div className="cursor-pointer flex items-center justify-center border-2 border-black rounded-full p-[2px]">
-                  <Minus size={16} />
-                </div>
-                <p>0</p>
-                <div className="cursor-pointer flex items-center justify-center border-2 border-black rounded-full p-[2px]">
-                  <Plus size={16} />
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center justify-center gap-2">
-              <p>Shutdown Complete</p>
+          <div className="m-2 flex flex-col gap-3 border border-black rounded-lg p-2 shrink-0">
+            <div className="flex justify-between items-center gap-2">
+              <p className="text-sm text-gray-600">Shutdown Complete</p>
               <input
                 type="checkbox"
-                className="custom-checkbox w-5 h-5 cursor-pointer appearance-none border-2 border-black rounded checked:bg-(--color-purple) checked:border-(--color-purple) focus:outline-none focus:ring-2 focus:ring-(--color-purple) transition-colors"
+                className="custom-checkbox w-5 h-5 cursor-pointer appearance-none border-2 border-black rounded checked:bg-(--color-purple) checked:border-(--color-purple) focus:outline-none transition-colors"
               />
+            </div>
+            <div className="flex justify-between items-center gap-4">
+              <p className="text-sm text-gray-600">Daily Metrics</p>
+              <div className="flex items-center justify-center gap-2">
+                <div
+                  className="cursor-pointer flex items-center justify-center border-2 border-black rounded-full p-[2px]"
+                  onClick={decrementDeepHours}
+                >
+                  <Minus size={14} />
+                </div>
+                <p className="flex-1 w-[15px] text-center">
+                  {dailyMetrics.deepHours}
+                </p>
+                <div
+                  className="cursor-pointer flex items-center justify-center border-2 border-black rounded-full p-[2px]"
+                  onClick={incrementDeepHours}
+                >
+                  <Plus size={14} />
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Tasks and Notes Container */}
-          <div className="flex gap-2 m-2 flex-1 min-h-0">
-            <div className="flex-1 flex flex-col border border-black rounded-lg overflow-hidden">
-              <div className="flex justify-between items-center p-2 shrink-0">
-                <h3 className="text-lg font-bold">Tasks</h3>
-              </div>
-              <div className="flex-1 overflow-auto">
-                {/* Tasks content will go here */}
-              </div>
-            </div>
-            <div className="flex-1 flex flex-col border border-black rounded-lg overflow-hidden">
-              <div className="flex items-center justify-between p-2 shrink-0">
-                <h3 className="text-lg font-bold">Notes</h3>
-                <SquarePen size={20} className="cursor-pointer" />
-              </div>
-              <div className="flex-1 overflow-auto">
-                {/* Notes content will go here */}
-              </div>
-            </div>
+          <div className="flex flex-col gap-6 mx-2 min-w-0 flex-1 min-h-0">
+            <Tabs
+              defaultValue="account"
+              className="w-full min-w-0 flex-1 min-h-0"
+            >
+              <TabsList>
+                <TabsTrigger value="account">Tasks</TabsTrigger>
+                <TabsTrigger value="password">Notes</TabsTrigger>
+              </TabsList>
+              <TabsContent value="account" className="flex-1 min-h-0">
+                <Tasks />
+              </TabsContent>
+              <TabsContent value="password" className="flex-1 min-h-0">
+                <Notes />
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
 
         {/* Time Block Grid */}
-        <div id="time-block-grid" className="w-1/2 h-full overflow-auto">
+        <div id="time-block-grid" className="w-2/3 h-full overflow-auto">
           This is the time block grid
         </div>
       </main>
