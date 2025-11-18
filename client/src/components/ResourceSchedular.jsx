@@ -13,7 +13,7 @@ const COLORS = [
 
 const CELL_HEIGHT = 60; // Height per hour
 const START_HOUR = 0;
-const END_HOUR = 24;
+const END_HOUR = 23;
 const HOURS = Array.from(
   { length: END_HOUR - START_HOUR + 1 },
   (_, i) => START_HOUR + i
@@ -70,10 +70,10 @@ export function ResourceSchedular({
     onDateChange(today);
   };
 
-  const handleReplan = () => {
-    // Enable all plans when replan is clicked
-    setEnabledPlans(new Set(resources.map((r) => r.id)));
-  };
+  // const handleReplan = () => {
+  //   // Enable all plans when replan is clicked
+  //   setEnabledPlans(new Set(resources.map((r) => r.id)));
+  // };
 
   const dateString = currentDate.toISOString().split('T')[0];
   const todayEvents = events.filter((e) => e.date === dateString);
@@ -432,19 +432,20 @@ export function ResourceSchedular({
       onMouseUp={handleMouseUp}
       onClick={handleClickOutside}
     >
-      <div className="w-full border-b border-gray-200 p-2 flex items-center justify-between bg-muted/30">
+      <div className="w-full border-b border-black p-2 flex items-center justify-between bg-muted/30">
         <div className="text-base font-semibold flex items-center gap-1">
           <Calendar size={16} />
           {formatDate(currentDate)}
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <div
+            {/* <div
               onClick={handleReplan}
               className="text-sm flex items-center justify-center border border-(--text-color) bg-(--text-color) text-white rounded-full px-3 py-1 cursor-pointer"
             >
               Replan
-            </div>
+            </div> */}
+
             <div
               onClick={handleToday}
               className="text-sm flex items-center justify-center border border-(--text-color) bg-(--text-color) text-white rounded-full px-3 py-1 cursor-pointer"
@@ -475,14 +476,16 @@ export function ResourceSchedular({
             <div
               key={resource.id}
               className={cn(
-                'border-r p-3 text-center text-xs font-semibold bg-muted/30',
+                'border-r p-3 text-center text-xs font-semibold bg-muted/30 flex flex-wrap items-center justify-center gap-2',
                 !isEnabled && 'opacity-50',
-                isCurrentPlan && 'ring-2 ring-blue-500'
+                isCurrentPlan && ''
               )}
             >
               {resource.name}
               {isCurrentPlan && (
-                <span className="ml-1 text-[10px] text-blue-600">(Active)</span>
+                <span className="text-[10px] font-medium px-[6px] py-[2px] text-black border border-black rounded-full bg-(--color-6)">
+                  Active
+                </span>
               )}
             </div>
           );
@@ -498,10 +501,13 @@ export function ResourceSchedular({
         >
           {/* Hours labels */}
           <div className="border-r">
-            {HOURS.map((hour) => (
+            {HOURS.map((hour, hourIndex) => (
               <div
                 key={hour}
-                className="border-b text-xs text-muted-foreground text-right pr-2 pt-1"
+                className={cn(
+                  'text-xs text-muted-foreground text-right pr-2 pt-1',
+                  hourIndex < HOURS.length - 1 && 'border-b'
+                )}
                 style={{ height: CELL_HEIGHT }}
               >
                 {hour % 12 || 12} {hour >= 12 ? 'PM' : 'AM'}
@@ -532,7 +538,7 @@ export function ResourceSchedular({
                 }}
               >
                 {/* Hours cells */}
-                {HOURS.map((hour) => {
+                {HOURS.map((hour, hourIndex) => {
                   // Check if this hour cell is before replan time (disabled area)
                   // Disable hours that start before the replan time
                   const hourStartMinutes = hour * 60;
@@ -549,12 +555,14 @@ export function ResourceSchedular({
 
                   const isDisabledArea =
                     isCurrentPlan && replanTime && isBeforeReplanTime;
+                  const isLastHour = hourIndex === HOURS.length - 1;
 
                   return (
                     <div
                       key={hour}
                       className={cn(
-                        'border-b transition-colors relative',
+                        'transition-colors relative',
+                        !isLastHour && 'border-b',
                         isEnabled && !isDisabledArea
                           ? 'hover:bg-muted/20 cursor-crosshair'
                           : 'cursor-not-allowed',
