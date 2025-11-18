@@ -39,7 +39,7 @@ function Notes() {
           {markdown ? (
             <Streamdown>{markdown}</Streamdown>
           ) : (
-            <p className="text-gray-400 italic text-[13px]">
+            <p className="text-gray-500 italic text-[13px]">
               No notes yet. Click the pen icon to add notes.
             </p>
           )}
