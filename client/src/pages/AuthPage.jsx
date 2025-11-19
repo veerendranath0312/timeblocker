@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { Link } from 'react-router';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router';
 import { Mail, Github } from 'lucide-react';
+import { useAuthStore } from '../store/useAuthStore';
 
 function Navbar() {
   return (
@@ -74,20 +75,50 @@ function ForgotPasswordForm({ switchToLogin }) {
 }
 
 function LoginForm({ switchToSignup }) {
+  const navigate = useNavigate();
+  const login = useAuthStore((state) => state.login);
   const [switchToForgotPassword, setSwitchToForgotPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleEmailChange = (e) => {
     setEmail(e.target.value);
+    setError('');
   };
 
   const handlePasswordChange = (e) => {
     setPassword(e.target.value);
+    setError('');
   };
 
   const handleSwitchToForgotPassword = () => {
     setSwitchToForgotPassword(true);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!email || !password) return;
+
+    setLoading(true);
+    setError('');
+    const result = await login(email, password);
+    setLoading(false);
+
+    if (result.success) {
+      navigate('/home');
+    } else {
+      setError(result.error || 'Login failed');
+    }
+  };
+
+  const handleGoogleLogin = () => {
+    window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/google`;
+  };
+
+  const handleGitHubLogin = () => {
+    window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/github`;
   };
 
   return (
@@ -96,16 +127,23 @@ function LoginForm({ switchToSignup }) {
         <ForgotPasswordForm switchToLogin={handleSwitchToForgotPassword} />
       ) : (
         <div className="w-full sm:w-[512px] h-full bg-(--color-3) p-6 rounded-xl">
-          <form className="w-full flex flex-col gap-4">
+          <form className="w-full flex flex-col gap-4" onSubmit={handleSubmit}>
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-bold">Hello, welcome back!</h3>
               <button
+                type="button"
                 className="text-sm font-medium border border-(--text-color) px-3 py-[2px] rounded-full cursor-pointer"
                 onClick={switchToSignup}
               >
                 Sign up
               </button>
             </div>
+
+            {error && (
+              <div className="text-red-600 text-sm bg-red-50 p-2 rounded">
+                {error}
+              </div>
+            )}
 
             <div className="flex flex-col gap-6">
               <input
@@ -114,6 +152,7 @@ function LoginForm({ switchToSignup }) {
                 className="w-full pb-2 border-b border-(--color-disabled) text-base outline-none"
                 value={email}
                 onChange={handleEmailChange}
+                required
               />
               <input
                 type="password"
@@ -121,6 +160,7 @@ function LoginForm({ switchToSignup }) {
                 className="w-full pb-2 border-b border-(--color-disabled) text-base outline-none"
                 value={password}
                 onChange={handlePasswordChange}
+                required
               />
 
               <p
@@ -131,22 +171,27 @@ function LoginForm({ switchToSignup }) {
               </p>
 
               <button
-                className="w-full bg-black text-white text-base font-bold px-4 py-2 rounded-full"
-                style={{
-                  opacity: email && password ? 1 : 0.5,
-                  cursor: email && password ? 'pointer' : '',
-                }}
-                disabled={!email || !password}
+                type="submit"
+                className="w-full bg-black text-white text-base font-bold px-4 py-2 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!email || !password || loading}
               >
-                Let me in
+                {loading ? 'Logging in...' : 'Let me in'}
               </button>
             </div>
 
             <div className="flex justify-center items-center gap-4 sm:flex-row flex-col ">
-              <button className="w-full sm:w-auto text-sm font-normal bg-white text-black border border-(--text-color) py-2 rounded-full cursor-pointer flex justify-center items-center gap-2 flex-1">
+              <button
+                type="button"
+                onClick={handleGoogleLogin}
+                className="w-full sm:w-auto text-sm font-normal bg-white text-black border border-(--text-color) py-2 rounded-full cursor-pointer flex justify-center items-center gap-2 flex-1"
+              >
                 <Mail size={20} /> Sign in with Google
               </button>
-              <button className="w-full sm:w-auto text-sm font-normal bg-white text-black border border-(--text-color) py-2 rounded-full cursor-pointer flex justify-center items-center gap-2 flex-1">
+              <button
+                type="button"
+                onClick={handleGitHubLogin}
+                className="w-full sm:w-auto text-sm font-normal bg-white text-black border border-(--text-color) py-2 rounded-full cursor-pointer flex justify-center items-center gap-2 flex-1"
+              >
                 <Github size={20} /> Sign in with GitHub
               </button>
             </div>
@@ -158,34 +203,72 @@ function LoginForm({ switchToSignup }) {
 }
 
 function SignupForm({ switchToLogin }) {
+  const navigate = useNavigate();
+  const signup = useAuthStore((state) => state.signup);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleNameChange = (e) => {
     setName(e.target.value);
+    setError('');
   };
 
   const handleEmailChange = (e) => {
     setEmail(e.target.value);
+    setError('');
   };
 
   const handlePasswordChange = (e) => {
     setPassword(e.target.value);
+    setError('');
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!name || !email || !password) return;
+
+    setLoading(true);
+    setError('');
+    const result = await signup(name, email, password);
+    setLoading(false);
+
+    if (result.success) {
+      navigate('/home');
+    } else {
+      setError(result.error || 'Signup failed');
+    }
+  };
+
+  const handleGoogleLogin = () => {
+    window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/google`;
+  };
+
+  const handleGitHubLogin = () => {
+    window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/github`;
   };
 
   return (
     <div className="w-full sm:w-[512px] h-full bg-(--color-2) p-6 rounded-xl">
-      <form className="w-full flex flex-col gap-4">
+      <form className="w-full flex flex-col gap-4" onSubmit={handleSubmit}>
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-xl font-bold">Hello, welcome back!</h3>
           <button
+            type="button"
             className="text-sm font-medium border border-(--text-color) px-3 py-[2px] rounded-full cursor-pointer"
             onClick={switchToLogin}
           >
             Log in
           </button>
         </div>
+
+        {error && (
+          <div className="text-red-600 text-sm bg-red-50 p-2 rounded">
+            {error}
+          </div>
+        )}
 
         <div className="flex flex-col gap-6">
           <input
@@ -194,6 +277,7 @@ function SignupForm({ switchToLogin }) {
             className="w-full pb-2 border-b border-(--color-disabled) text-base outline-none"
             value={name}
             onChange={handleNameChange}
+            required
           />
 
           <input
@@ -202,6 +286,7 @@ function SignupForm({ switchToLogin }) {
             className="w-full pb-2 border-b border-(--color-disabled) text-base outline-none"
             value={email}
             onChange={handleEmailChange}
+            required
           />
 
           <input
@@ -210,6 +295,8 @@ function SignupForm({ switchToLogin }) {
             className="w-full pb-2 border-b border-(--color-disabled) text-base outline-none"
             value={password}
             onChange={handlePasswordChange}
+            required
+            minLength={6}
           />
 
           <p className="text-[12px] text-(--color-disabled) text-left">
@@ -219,22 +306,27 @@ function SignupForm({ switchToLogin }) {
           </p>
 
           <button
-            className="w-full bg-black text-white text-base font-bold px-4 py-2 rounded-full"
-            style={{
-              opacity: name && email && password ? 1 : 0.5,
-              cursor: name && email && password ? 'pointer' : '',
-            }}
-            disabled={!name || !email || !password}
+            type="submit"
+            className="w-full bg-black text-white text-base font-bold px-4 py-2 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!name || !email || !password || loading}
           >
-            Create account
+            {loading ? 'Creating account...' : 'Create account'}
           </button>
         </div>
 
         <div className="flex justify-center items-center gap-4 sm:flex-row flex-col ">
-          <button className="w-full sm:w-auto text-sm font-normal bg-white text-black border border-(--text-color) py-2 rounded-full cursor-pointer flex justify-center items-center gap-2 flex-1">
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            className="w-full sm:w-auto text-sm font-normal bg-white text-black border border-(--text-color) py-2 rounded-full cursor-pointer flex justify-center items-center gap-2 flex-1"
+          >
             <Mail size={20} /> Sign in with Google
           </button>
-          <button className="w-full sm:w-auto text-sm font-normal bg-white text-black border border-(--text-color) py-2 rounded-full cursor-pointer flex justify-center items-center gap-2 flex-1">
+          <button
+            type="button"
+            onClick={handleGitHubLogin}
+            className="w-full sm:w-auto text-sm font-normal bg-white text-black border border-(--text-color) py-2 rounded-full cursor-pointer flex justify-center items-center gap-2 flex-1"
+          >
             <Github size={20} /> Sign in with GitHub
           </button>
         </div>
@@ -244,7 +336,19 @@ function SignupForm({ switchToLogin }) {
 }
 
 function AuthPage() {
+  const navigate = useNavigate();
+  const { init } = useAuthStore();
   const [isLogin, setIsLogin] = useState(true);
+
+  // Check if user is already authenticated (e.g., from OAuth callback)
+  React.useEffect(() => {
+    init().then(() => {
+      const isAuthenticated = useAuthStore.getState().isAuthenticated;
+      if (isAuthenticated) {
+        navigate('/home');
+      }
+    });
+  }, [navigate, init]);
 
   const switchToSignup = () => {
     setIsLogin(false);

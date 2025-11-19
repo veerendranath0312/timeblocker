@@ -1,32 +1,92 @@
+import { Request, Response } from 'express';
+import { signup, login, oauthLogin, OAuthProfile } from '../services/auth.service';
+import { signupSchema, loginSchema } from '../schemas/auth.schema';
+import { ENV } from '../config/config.env';
+
 /**
- * This file contains the authentication controller functions.
- * Controllers handle HTTP requests and responses for authentication-related endpoints.
- * They receive requests from routes, call service functions to process business logic,
- * and return appropriate HTTP responses to the client.
- * This file will contain functions like login, register, logout, etc.
+ * Sign up controller
  */
-// import {ENV} from '../config/config.env'
-import { Request, Response, NextFunction } from 'express';
-import { emailPasswordSchema, EmailPasswordRequest, IdTokenRequest, idTokenSchema } from "../schemas/auth.schema";
-import { regularUserLogin, regularUserRegistration, oauthLoginService } from "../services/auth.service";
-import {handleAuth} from './auth.interface'
-// Authentication controller functions will be implemented here
-// Example:
+export const signupController = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Validate request body
+    const validatedData = signupSchema.parse(req.body);
 
-export const regularRegistrationController = (req: Request, res: Response) =>
-  handleAuth(req, res, emailPasswordSchema, ({ email, password }) => {
-    console.log("Regular registration request:", { email, password });
-    return regularUserRegistration(email, password);
-  });
+    // Create user
+    const { user, token } = await signup(validatedData);
 
-export const regularLoginController = (req: Request, res: Response) =>
-  handleAuth(req, res, emailPasswordSchema, ({ email, password }) => {
-    console.log("Regular login request:", { email, password });
-    return regularUserLogin(email, password);
-  });
+    // Set token in HTTP-only cookie
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: ENV.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
 
-export const oauthLoginController = (req: Request, res: Response) =>
-  handleAuth(req, res, idTokenSchema, ({ idToken }) => {
-    console.log("OAuth login request:", { idToken });
-    return oauthLoginService(idToken);
+    res.status(201).json({
+      message: 'User created successfully',
+      user,
+      token, // Also send in response for frontend storage if needed
+    });
+  } catch (error: any) {
+    if (error.name === 'ZodError') {
+      res.status(400).json({ error: error.errors[0].message });
+      return;
+    }
+    res.status(400).json({ error: error.message || 'Signup failed' });
+  }
+};
+
+/**
+ * Login controller
+ */
+export const loginController = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Validate request body
+    const validatedData = loginSchema.parse(req.body);
+
+    // Login user
+    const { user, token } = await login(validatedData);
+
+    // Set token in HTTP-only cookie
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: ENV.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    res.json({
+      message: 'Login successful',
+      user,
+      token, // Also send in response for frontend storage if needed
+    });
+  } catch (error: any) {
+    if (error.name === 'ZodError') {
+      res.status(400).json({ error: error.errors[0].message });
+      return;
+    }
+    res.status(401).json({ error: error.message || 'Login failed' });
+  }
+};
+
+/**
+ * Logout controller
+ */
+export const logoutController = async (req: Request, res: Response): Promise<void> => {
+  res.clearCookie('token');
+  res.json({ message: 'Logout successful' });
+};
+
+/**
+ * Get current user controller
+ */
+export const getCurrentUserController = async (req: Request, res: Response): Promise<void> => {
+  if (!req.user) {
+    res.status(401).json({ error: 'Not authenticated' });
+    return;
+  }
+
+  res.json({
+    user: req.user,
   });
+};

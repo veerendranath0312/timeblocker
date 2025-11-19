@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { api } from '../lib/api';
 
 // Helper to get date string in YYYY-MM-DD format
 const getDateString = (date) => {
@@ -22,9 +23,151 @@ export const useDateStore = create((set, get) => ({
   dailyMetricsByDate: {}, // { '2025-01-15': { shutdownComplete: false, deepHours: 0 } }
   eventsByDate: {}, // { '2025-01-15': [{ id, title, startTime, endTime, resourceId, color, ... }] }
 
+  // Loading states
+  isLoading: {
+    tasks: {},
+    notes: {},
+    metrics: {},
+    events: {},
+  },
+
   // Actions
-  setCurrentDate: (date) => {
+  setCurrentDate: async (date) => {
     set({ currentDate: date });
+    const dateString = getDateString(date);
+
+    // Load data for the new date
+    await Promise.all([
+      get().loadTasks(dateString),
+      get().loadNote(dateString),
+      get().loadMetrics(dateString),
+      get().loadEvents(dateString),
+    ]);
+  },
+
+  // Load data from API
+  loadTasks: async (dateString) => {
+    try {
+      set((state) => ({
+        isLoading: {
+          ...state.isLoading,
+          tasks: { ...state.isLoading.tasks, [dateString]: true },
+        },
+      }));
+
+      const tasks = await api.getTasks(dateString);
+      set((state) => ({
+        tasksByDate: {
+          ...state.tasksByDate,
+          [dateString]: tasks,
+        },
+        isLoading: {
+          ...state.isLoading,
+          tasks: { ...state.isLoading.tasks, [dateString]: false },
+        },
+      }));
+    } catch (error) {
+      console.error('Failed to load tasks:', error);
+      set((state) => ({
+        isLoading: {
+          ...state.isLoading,
+          tasks: { ...state.isLoading.tasks, [dateString]: false },
+        },
+      }));
+    }
+  },
+
+  loadNote: async (dateString) => {
+    try {
+      set((state) => ({
+        isLoading: {
+          ...state.isLoading,
+          notes: { ...state.isLoading.notes, [dateString]: true },
+        },
+      }));
+
+      const content = await api.getNote(dateString);
+      set((state) => ({
+        notesByDate: {
+          ...state.notesByDate,
+          [dateString]: content,
+        },
+        isLoading: {
+          ...state.isLoading,
+          notes: { ...state.isLoading.notes, [dateString]: false },
+        },
+      }));
+    } catch (error) {
+      console.error('Failed to load note:', error);
+      set((state) => ({
+        isLoading: {
+          ...state.isLoading,
+          notes: { ...state.isLoading.notes, [dateString]: false },
+        },
+      }));
+    }
+  },
+
+  loadMetrics: async (dateString) => {
+    try {
+      set((state) => ({
+        isLoading: {
+          ...state.isLoading,
+          metrics: { ...state.isLoading.metrics, [dateString]: true },
+        },
+      }));
+
+      const metrics = await api.getMetrics(dateString);
+      set((state) => ({
+        dailyMetricsByDate: {
+          ...state.dailyMetricsByDate,
+          [dateString]: metrics,
+        },
+        isLoading: {
+          ...state.isLoading,
+          metrics: { ...state.isLoading.metrics, [dateString]: false },
+        },
+      }));
+    } catch (error) {
+      console.error('Failed to load metrics:', error);
+      set((state) => ({
+        isLoading: {
+          ...state.isLoading,
+          metrics: { ...state.isLoading.metrics, [dateString]: false },
+        },
+      }));
+    }
+  },
+
+  loadEvents: async (dateString) => {
+    try {
+      set((state) => ({
+        isLoading: {
+          ...state.isLoading,
+          events: { ...state.isLoading.events, [dateString]: true },
+        },
+      }));
+
+      const events = await api.getEvents(dateString);
+      set((state) => ({
+        eventsByDate: {
+          ...state.eventsByDate,
+          [dateString]: events,
+        },
+        isLoading: {
+          ...state.isLoading,
+          events: { ...state.isLoading.events, [dateString]: false },
+        },
+      }));
+    } catch (error) {
+      console.error('Failed to load events:', error);
+      set((state) => ({
+        isLoading: {
+          ...state.isLoading,
+          events: { ...state.isLoading.events, [dateString]: false },
+        },
+      }));
+    }
   },
 
   // Tasks
@@ -44,50 +187,66 @@ export const useDateStore = create((set, get) => ({
     }));
   },
 
-  addTask: (date, task) => {
+  addTask: async (date, task) => {
     const dateString = getDateString(date);
-    set((state) => {
-      const existingTasks = state.tasksByDate[dateString] || [];
-      const newTask = {
+    try {
+      const newTask = await api.createTask({
         ...task,
-        id: task.id || crypto.randomUUID(),
         date: dateString,
-      };
-      return {
-        tasksByDate: {
-          ...state.tasksByDate,
-          [dateString]: [...existingTasks, newTask],
-        },
-      };
-    });
+      });
+      set((state) => {
+        const existingTasks = state.tasksByDate[dateString] || [];
+        return {
+          tasksByDate: {
+            ...state.tasksByDate,
+            [dateString]: [...existingTasks, newTask],
+          },
+        };
+      });
+    } catch (error) {
+      console.error('Failed to create task:', error);
+      throw error;
+    }
   },
 
-  updateTask: (date, taskId, updates) => {
+  updateTask: async (date, taskId, updates) => {
     const dateString = getDateString(date);
-    set((state) => {
-      const existingTasks = state.tasksByDate[dateString] || [];
-      return {
-        tasksByDate: {
-          ...state.tasksByDate,
-          [dateString]: existingTasks.map((task) =>
-            task.id === taskId ? { ...task, ...updates } : task
-          ),
-        },
-      };
-    });
+    try {
+      const updatedTask = await api.updateTask(taskId, updates);
+      set((state) => {
+        const existingTasks = state.tasksByDate[dateString] || [];
+        return {
+          tasksByDate: {
+            ...state.tasksByDate,
+            [dateString]: existingTasks.map((task) =>
+              task.id === taskId ? updatedTask : task
+            ),
+          },
+        };
+      });
+    } catch (error) {
+      console.error('Failed to update task:', error);
+      throw error;
+    }
   },
 
-  deleteTask: (date, taskId) => {
+  deleteTask: async (date, taskId) => {
     const dateString = getDateString(date);
-    set((state) => {
-      const existingTasks = state.tasksByDate[dateString] || [];
-      return {
-        tasksByDate: {
-          ...state.tasksByDate,
-          [dateString]: existingTasks.filter((task) => task.id !== taskId),
-        },
-      };
-    });
+    try {
+      await api.deleteTask(taskId);
+      set((state) => {
+        const existingTasks = state.tasksByDate[dateString] || [];
+        return {
+          tasksByDate: {
+            ...state.tasksByDate,
+            [dateString]: existingTasks.filter((task) => task.id !== taskId),
+          },
+        };
+      });
+    } catch (error) {
+      console.error('Failed to delete task:', error);
+      throw error;
+    }
   },
 
   // Notes
@@ -97,14 +256,20 @@ export const useDateStore = create((set, get) => ({
     return state.notesByDate[dateString] || '';
   },
 
-  setNoteForDate: (date, content) => {
+  setNoteForDate: async (date, content) => {
     const dateString = getDateString(date);
-    set((state) => ({
-      notesByDate: {
-        ...state.notesByDate,
-        [dateString]: content,
-      },
-    }));
+    try {
+      await api.saveNote(dateString, content);
+      set((state) => ({
+        notesByDate: {
+          ...state.notesByDate,
+          [dateString]: content,
+        },
+      }));
+    } catch (error) {
+      console.error('Failed to save note:', error);
+      throw error;
+    }
   },
 
   // Daily Metrics
@@ -129,20 +294,20 @@ export const useDateStore = create((set, get) => ({
     }));
   },
 
-  updateDailyMetricsForDate: (date, updates) => {
+  updateDailyMetricsForDate: async (date, updates) => {
     const dateString = getDateString(date);
-    set((state) => {
-      const current = state.dailyMetricsByDate[dateString] || {
-        shutdownComplete: false,
-        deepHours: 0,
-      };
-      return {
+    try {
+      const updatedMetrics = await api.updateMetrics(dateString, updates);
+      set((state) => ({
         dailyMetricsByDate: {
           ...state.dailyMetricsByDate,
-          [dateString]: { ...current, ...updates },
+          [dateString]: updatedMetrics,
         },
-      };
-    });
+      }));
+    } catch (error) {
+      console.error('Failed to update metrics:', error);
+      throw error;
+    }
   },
 
   // Events
@@ -162,49 +327,67 @@ export const useDateStore = create((set, get) => ({
     }));
   },
 
-  addEvent: (date, event) => {
+  addEvent: async (date, event) => {
     const dateString = getDateString(date);
-    set((state) => {
-      const existingEvents = state.eventsByDate[dateString] || [];
-      const newEvent = {
+    try {
+      const newEvent = await api.createEvent({
         ...event,
-        id: event.id || crypto.randomUUID(),
         date: dateString,
-      };
-      return {
-        eventsByDate: {
-          ...state.eventsByDate,
-          [dateString]: [...existingEvents, newEvent],
-        },
-      };
-    });
+      });
+      set((state) => {
+        const existingEvents = state.eventsByDate[dateString] || [];
+        return {
+          eventsByDate: {
+            ...state.eventsByDate,
+            [dateString]: [...existingEvents, newEvent],
+          },
+        };
+      });
+    } catch (error) {
+      console.error('Failed to create event:', error);
+      throw error;
+    }
   },
 
-  updateEvent: (date, eventId, updates) => {
+  updateEvent: async (date, eventId, updates) => {
     const dateString = getDateString(date);
-    set((state) => {
-      const existingEvents = state.eventsByDate[dateString] || [];
-      return {
-        eventsByDate: {
-          ...state.eventsByDate,
-          [dateString]: existingEvents.map((event) =>
-            event.id === eventId ? { ...event, ...updates } : event
-          ),
-        },
-      };
-    });
+    try {
+      const updatedEvent = await api.updateEvent(eventId, updates);
+      set((state) => {
+        const existingEvents = state.eventsByDate[dateString] || [];
+        return {
+          eventsByDate: {
+            ...state.eventsByDate,
+            [dateString]: existingEvents.map((event) =>
+              event.id === eventId ? updatedEvent : event
+            ),
+          },
+        };
+      });
+    } catch (error) {
+      console.error('Failed to update event:', error);
+      throw error;
+    }
   },
 
-  deleteEvent: (date, eventId) => {
+  deleteEvent: async (date, eventId) => {
     const dateString = getDateString(date);
-    set((state) => {
-      const existingEvents = state.eventsByDate[dateString] || [];
-      return {
-        eventsByDate: {
-          ...state.eventsByDate,
-          [dateString]: existingEvents.filter((event) => event.id !== eventId),
-        },
-      };
-    });
+    try {
+      await api.deleteEvent(eventId);
+      set((state) => {
+        const existingEvents = state.eventsByDate[dateString] || [];
+        return {
+          eventsByDate: {
+            ...state.eventsByDate,
+            [dateString]: existingEvents.filter(
+              (event) => event.id !== eventId
+            ),
+          },
+        };
+      });
+    } catch (error) {
+      console.error('Failed to delete event:', error);
+      throw error;
+    }
   },
 }));

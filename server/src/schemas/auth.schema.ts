@@ -1,19 +1,21 @@
 // src/schemas/auth.schema.ts
 import { z } from "zod";
 
-// Schema for login/register request
-export const emailPasswordSchema = z.object({
+// Schema for signup request
+export const signupSchema = z.object({
+  name: z.string().min(1, { message: "Name is required" }),
   email: z.string().email({ message: "Invalid email address" }),
   password: z.string().min(6, { message: "Password must be at least 6 characters" })
 });
 
 // Type inferred from schema
-export type EmailPasswordRequest = z.infer<typeof emailPasswordSchema>;
+export type SignupRequest = z.infer<typeof signupSchema>;
 
-// Schema for OAuth login request with ID token
-export const idTokenSchema = z.object({
-  idToken: z.string().min(1, { message: "ID token is required" })
+// Schema for login request
+export const loginSchema = z.object({
+  email: z.string().email({ message: "Invalid email address" }),
+  password: z.string().min(1, { message: "Password is required" })
 });
 
 // Type inferred from schema
-export type IdTokenRequest = z.infer<typeof idTokenSchema>;
+export type LoginRequest = z.infer<typeof loginSchema>;

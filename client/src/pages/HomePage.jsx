@@ -1,10 +1,12 @@
-import { Link } from 'react-router';
-import { User, ChevronRight, ChevronLeft, Plus, Minus } from 'lucide-react';
+import React from 'react';
+import { Link, useNavigate } from 'react-router';
+import { User, ChevronRight, ChevronLeft, Plus, Minus, LogOut } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/Tabs';
 import Tasks from '../components/Tasks';
 import Notes from '../components/Notes';
 import { ResourceSchedular } from '../components/ResourceSchedular';
 import { useDateStore } from '../store/useDateStore';
+import { useAuthStore } from '../store/useAuthStore';
 
 const RESOURCES = [
   { id: 'plan-a', name: 'Plan A' },
@@ -14,6 +16,15 @@ const RESOURCES = [
 ];
 
 function Navbar() {
+  const navigate = useNavigate();
+  const logout = useAuthStore((state) => state.logout);
+  const user = useAuthStore((state) => state.user);
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/auth');
+  };
+
   return (
     <nav className="p-3 sm:p-4 border-b">
       <div className="max-w-[1500px] mx-auto flex justify-between items-center px-4 sm:px-0">
@@ -21,15 +32,17 @@ function Navbar() {
           timeblocker
         </Link>
         <div className="flex items-center justify-center gap-3">
-          {/* <div className="flex items-center justify-center border border-(--text-color) bg-(--text-color) text-white rounded-full p-2 cursor-pointer">
-            <ChevronLeft size={20} />
-          </div>
-          <div className="flex items-center justify-center border border-(--text-color) bg-(--text-color) text-white rounded-full p-2 cursor-pointer">
-            <ChevronRight size={20} />
-          </div> */}
-
-          <div className="flex items-center justify-center border border-(--text-color) bg-(--color-2) rounded-full p-2 cursor-pointer">
-            <User size={20} />
+          {user && (
+            <div className="text-sm text-gray-600 hidden sm:block">
+              {user.name || user.email}
+            </div>
+          )}
+          <div
+            onClick={handleLogout}
+            className="flex items-center justify-center border border-(--text-color) bg-(--color-2) rounded-full p-2 cursor-pointer hover:opacity-80 transition-opacity"
+            title="Logout"
+          >
+            <LogOut size={20} />
           </div>
         </div>
       </div>
@@ -193,6 +206,24 @@ function Footer() {
 }
 
 function HomePage() {
+  const currentDate = useDateStore((state) => state.currentDate);
+  const loadTasks = useDateStore((state) => state.loadTasks);
+  const loadNote = useDateStore((state) => state.loadNote);
+  const loadMetrics = useDateStore((state) => state.loadMetrics);
+  const loadEvents = useDateStore((state) => state.loadEvents);
+
+  // Load initial data on mount
+  React.useEffect(() => {
+    const dateString = currentDate.toISOString().split('T')[0];
+    Promise.all([
+      loadTasks(dateString),
+      loadNote(dateString),
+      loadMetrics(dateString),
+      loadEvents(dateString),
+    ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only on mount
+
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       <Navbar />

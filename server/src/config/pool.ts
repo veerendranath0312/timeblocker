@@ -1,5 +1,5 @@
-import {ENV} from './config.env'
-import { Pool } from "pg";
+import { ENV } from './config.env';
+import { Pool } from 'pg';
 
 // export const pool = new Pool({
 //   connectionString: ENV.DATABASE_URL,

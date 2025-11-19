@@ -1,70 +1,203 @@
+import { db } from '../db';
+import { users } from '../db/schema';
+import { eq, or } from 'drizzle-orm';
+import { hashPassword, comparePassword } from '../utils/password';
+import { generateToken } from '../utils/jwt';
+import { ENV } from '../config/config.env';
+
+export interface SignupData {
+  name: string;
+  email: string;
+  password: string;
+}
+
+export interface LoginData {
+  email: string;
+  password: string;
+}
+
+export interface OAuthProfile {
+  id: string;
+  email: string;
+  name?: string;
+  provider: 'google' | 'github';
+}
+
 /**
- * This file contains the authentication service/business logic functions.
- * Services contain the core business logic and interact with models to perform
- * data operations. They are called by controllers and handle operations like:
- * - User registration logic
- * - Password hashing and verification
- * - Token generation and validation
- * - User authentication logic
- * Services separate business logic from HTTP request/response handling.
+ * Sign up a new user with email and password
  */
+export const signup = async (data: SignupData) => {
+  // Check if user already exists
+  const [existingUser] = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, data.email))
+    .limit(1);
 
-// Authentication service functions will be implemented here
-// Example:
-// export const registerUser = async (email: string, password: string): Promise<User> => {
-//   // Implementation
-// };
+  if (existingUser) {
+    throw new Error('User with this email already exists');
+  }
 
-import {User} from '../models/user.model';
-import {firebaseRegisterUser, firebaseLoginUser, firbaseVerifyToken} from '../firebase/firebaseUser';
-import { createSessionCookie } from "../firebase/firebaseSession";
-import {findOrCreateUser} from './auth.utils'
+  // Hash password
+  const passwordHash = await hashPassword(data.password);
 
-/**
- * Registers a regular user in Firebase and stores it in the database
- * @param email - User's email
- * @param password - User's password
- * @returns The created User object
- */
-export const regularUserRegistration = async (
-  email: string,
-  password: string
-): Promise<{ user: User; sessionCookie?: string }> => {
-  console.log('making new user')
-  // 1️⃣ Create user in Firebase
-  const userRecord = await firebaseRegisterUser(email, password);
-  // 2️⃣ Construct User object and save into DB
-  const user = await findOrCreateUser(userRecord.uid, userRecord.email!);
-  return { user };
+  // Create user
+  const [newUser] = await db
+    .insert(users)
+    .values({
+      name: data.name,
+      email: data.email,
+      passwordHash,
+      emailVerified: false,
+      isActive: true,
+    })
+    .returning({
+      id: users.id,
+      email: users.email,
+      name: users.name,
+    });
+
+  // Generate token
+  const token = generateToken({
+    userId: newUser.id,
+    email: newUser.email,
+  });
+
+  return {
+    user: newUser,
+    token,
+  };
 };
 
 /**
- * Logs in a regular user:
- * - Authenticates with Firebase
- * - Creates a secure session cookie
- * - Returns user info and cookie
+ * Login user with email and password
  */
-export const regularUserLogin = async (email: string, password: string): Promise<{ user: User; sessionCookie: string }> => {
-  // 1️⃣ Firebase login → get ID token and UID
-  const { uid, idToken } = await firebaseLoginUser(email, password);
+export const login = async (data: LoginData) => {
+  // Find user by email
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, data.email))
+    .limit(1);
 
-  // 2️⃣ Create secure session cookie
-  const sessionCookie = await createSessionCookie(idToken);
+  if (!user) {
+    throw new Error('Invalid email or password');
+  }
 
-  // 3️⃣ Check if user exists in DB
-  const user = await findOrCreateUser(uid, email ?? "");
-  return { user, sessionCookie };
+  if (!user.passwordHash) {
+    throw new Error('This account uses OAuth login. Please sign in with your provider.');
+  }
+
+  if (!user.isActive) {
+    throw new Error('User account is inactive');
+  }
+
+  // Verify password
+  const isValid = await comparePassword(data.password, user.passwordHash);
+  if (!isValid) {
+    throw new Error('Invalid email or password');
+  }
+
+  // Update last login
+  await db
+    .update(users)
+    .set({ lastLoginAt: new Date() })
+    .where(eq(users.id, user.id));
+
+  // Generate token
+  const token = generateToken({
+    userId: user.id,
+    email: user.email,
+  });
+
+  return {
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+    },
+    token,
+  };
 };
 
+/**
+ * OAuth login - find or create user from OAuth profile
+ */
+export const oauthLogin = async (profile: OAuthProfile) => {
+  const { id, email, name, provider } = profile;
 
-export const oauthLoginService = async (idToken: string): Promise<{ user: User; sessionCookie: string }> => {
-  // 1️⃣ Verify Firebase ID token
-  const decodedToken = await firbaseVerifyToken(idToken);
+  // Find user by email or provider ID
+  const [existingUser] = await db
+    .select()
+    .from(users)
+    .where(
+      or(
+        eq(users.email, email),
+        provider === 'google' ? eq(users.googleId, id) : eq(users.githubId, id)
+      )
+    )
+    .limit(1);
 
-  // 2️⃣ Create session cookie
-  const sessionCookie = await createSessionCookie(idToken);
+  let user;
 
-  // 3️⃣ Check if user exists in DB
-  const user = await findOrCreateUser(decodedToken.uid, decodedToken.email ?? "");
-  return { user, sessionCookie };
+  if (existingUser) {
+    // Update user with provider ID if not set
+    const updateData: any = {
+      lastLoginAt: new Date(),
+    };
+
+    if (provider === 'google' && !existingUser.googleId) {
+      updateData.googleId = id;
+      updateData.emailVerified = true; // Google verifies emails
+    } else if (provider === 'github' && !existingUser.githubId) {
+      updateData.githubId = id;
+    }
+
+    if (name && !existingUser.name) {
+      updateData.name = name;
+    }
+
+    const [updatedUser] = await db
+      .update(users)
+      .set(updateData)
+      .where(eq(users.id, existingUser.id))
+      .returning({
+        id: users.id,
+        email: users.email,
+        name: users.name,
+      });
+
+    user = updatedUser;
+  } else {
+    // Create new user
+    const [newUser] = await db
+      .insert(users)
+      .values({
+        email,
+        name: name || null,
+        emailVerified: provider === 'google', // Google verifies emails
+        googleId: provider === 'google' ? id : null,
+        githubId: provider === 'github' ? id : null,
+        isActive: true,
+        lastLoginAt: new Date(),
+      })
+      .returning({
+        id: users.id,
+        email: users.email,
+        name: users.name,
+      });
+
+    user = newUser;
+  }
+
+  // Generate token
+  const token = generateToken({
+    userId: user.id,
+    email: user.email,
+  });
+
+  return {
+    user,
+    token,
+  };
 };
