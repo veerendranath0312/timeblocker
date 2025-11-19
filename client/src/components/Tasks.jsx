@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { Plus, Trash2, CalendarDays } from 'lucide-react';
 import {
   Dialog,
@@ -7,6 +7,7 @@ import {
   DialogClose,
   DialogContext,
 } from './Dialog';
+import { useDateStore } from '../store/useDateStore';
 
 // Component to access dialog context and handle form submission
 function TaskForm({ task, setTask, onSave, isEdit, onDelete }) {
@@ -106,6 +107,16 @@ function TaskForm({ task, setTask, onSave, isEdit, onDelete }) {
 }
 
 function Tasks() {
+  const currentDate = useDateStore((state) => state.currentDate);
+  const tasksByDate = useDateStore((state) => state.tasksByDate);
+  const addTaskToStore = useDateStore((state) => state.addTask);
+  const updateTaskInStore = useDateStore((state) => state.updateTask);
+  const deleteTaskFromStore = useDateStore((state) => state.deleteTask);
+
+  // Get date string for current date
+  const dateString = currentDate.toISOString().split('T')[0];
+  const tasks = tasksByDate[dateString] || [];
+
   const [task, setTask] = useState({
     title: '',
     description: '',
@@ -116,41 +127,25 @@ function Tasks() {
   const [editingTask, setEditingTask] = useState(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-  const [tasks, setTasks] = useState([
-    {
-      id: 1,
-      title: 'Record podcast video',
-      description:
-        "Don't forget to ask confirmation with the guest from Stanford.",
-      date: '2025-11-15',
-      completed: false,
-    },
-    {
-      id: 2,
-      title: 'Dinner with Anna',
-      description: '',
-      date: '2025-11-15',
-      completed: false,
-    },
-  ]);
+  // Update task form date when currentDate changes
+  useEffect(() => {
+    const dateString = currentDate.toISOString().split('T')[0];
+    setTask((prev) => ({ ...prev, date: dateString }));
+  }, [currentDate]);
 
   const toggleTask = (taskId) => {
-    setTasks((prevTasks) =>
-      prevTasks.map((task) =>
-        task.id === taskId ? { ...task, completed: !task.completed } : task
-      )
-    );
+    const task = tasks.find((t) => t.id === taskId);
+    if (task) {
+      updateTaskInStore(currentDate, taskId, { completed: !task.completed });
+    }
   };
 
   const addTask = (task, onClose) => {
-    setTasks((prevTasks) => [
-      ...prevTasks,
-      { ...task, id: prevTasks.length + 1, date: new Date().toISOString() },
-    ]);
+    addTaskToStore(currentDate, task);
     setTask({
       title: '',
       description: '',
-      date: '',
+      date: currentDate.toISOString().split('T')[0],
       completed: false,
     });
     if (onClose) {
@@ -159,9 +154,7 @@ function Tasks() {
   };
 
   const updateTask = (updatedTask, onClose) => {
-    setTasks((prevTasks) =>
-      prevTasks.map((task) => (task.id === updatedTask.id ? updatedTask : task))
-    );
+    updateTaskInStore(currentDate, updatedTask.id, updatedTask);
     handleCloseEditDialog();
     if (onClose) {
       onClose();
@@ -169,7 +162,7 @@ function Tasks() {
   };
 
   const deleteTask = (taskId, onClose) => {
-    setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
+    deleteTaskFromStore(currentDate, taskId);
     handleCloseEditDialog();
     if (onClose) {
       onClose();

@@ -1,10 +1,30 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PencilLine, Save } from 'lucide-react';
 import { Streamdown } from 'streamdown';
+import { useDateStore } from '../store/useDateStore';
 
 function Notes() {
+  const currentDate = useDateStore((state) => state.currentDate);
+  const notesByDate = useDateStore((state) => state.notesByDate);
+  const setNoteForDate = useDateStore((state) => state.setNoteForDate);
+
+  // Get date string for current date
+  const dateString = currentDate.toISOString().split('T')[0];
+  const markdown = notesByDate[dateString] || '';
+
   const [isEdit, setIsEdit] = useState(false);
-  const [markdown, setMarkdown] = useState('');
+  const [localMarkdown, setLocalMarkdown] = useState(markdown);
+
+  // Update local markdown when date changes
+  useEffect(() => {
+    setLocalMarkdown(markdown);
+    setIsEdit(false); // Exit edit mode when date changes
+  }, [dateString, markdown]);
+
+  const handleSave = () => {
+    setNoteForDate(currentDate, localMarkdown);
+    setIsEdit(false);
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -16,7 +36,7 @@ function Notes() {
             color="black"
             strokeWidth={2.5}
             className="cursor-pointer"
-            onClick={() => setIsEdit(false)}
+            onClick={handleSave}
           />
         ) : (
           <PencilLine
@@ -31,8 +51,8 @@ function Notes() {
       {isEdit ? (
         <textarea
           className="w-full h-full p-2 border-b border-gray-200 resize-none outline-none font-(--font-family) text-sm no-scrollbar"
-          value={markdown}
-          onChange={(e) => setMarkdown(e.target.value)}
+          value={localMarkdown}
+          onChange={(e) => setLocalMarkdown(e.target.value)}
         />
       ) : (
         <div className="text-sm tw-full h-full p-2 border-b border-gray-200 no-scrollbar overflow-y-auto">

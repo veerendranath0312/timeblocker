@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
 import { User, ChevronRight, ChevronLeft, Plus, Minus } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/Tabs';
 import Tasks from '../components/Tasks';
 import Notes from '../components/Notes';
 import { ResourceSchedular } from '../components/ResourceSchedular';
+import { useDateStore } from '../store/useDateStore';
 
 const RESOURCES = [
   { id: 'plan-a', name: 'Plan A' },
@@ -38,27 +38,35 @@ function Navbar() {
 }
 
 function CollectionPage() {
-  const [dailyMetrics, setDailyMetrics] = useState({
+  const currentDate = useDateStore((state) => state.currentDate);
+  const dailyMetricsByDate = useDateStore((state) => state.dailyMetricsByDate);
+  const updateDailyMetrics = useDateStore(
+    (state) => state.updateDailyMetricsForDate
+  );
+
+  // Get date string for current date
+  const dateString = currentDate.toISOString().split('T')[0];
+  const dailyMetrics = dailyMetricsByDate[dateString] || {
     shutdownComplete: false,
     deepHours: 0,
-  });
+  };
 
   const incrementDeepHours = () => {
-    setDailyMetrics((prev) => {
-      if (prev.deepHours < 24) {
-        return { ...prev, deepHours: prev.deepHours + 1 };
-      }
-      return prev;
-    });
+    const current = dailyMetrics.deepHours;
+    if (current < 24) {
+      updateDailyMetrics(currentDate, { deepHours: current + 1 });
+    }
   };
 
   const decrementDeepHours = () => {
-    setDailyMetrics((prev) => {
-      if (prev.deepHours > 0) {
-        return { ...prev, deepHours: prev.deepHours - 1 };
-      }
-      return prev;
-    });
+    const current = dailyMetrics.deepHours;
+    if (current > 0) {
+      updateDailyMetrics(currentDate, { deepHours: current - 1 });
+    }
+  };
+
+  const handleShutdownCompleteChange = (checked) => {
+    updateDailyMetrics(currentDate, { shutdownComplete: checked });
   };
 
   return (
@@ -100,6 +108,8 @@ function CollectionPage() {
           <p className="text-sm text-gray-600">Shutdown Complete</p>
           <input
             type="checkbox"
+            checked={dailyMetrics.shutdownComplete}
+            onChange={(e) => handleShutdownCompleteChange(e.target.checked)}
             className="custom-checkbox w-5 h-5 cursor-pointer appearance-none border-2 border-black rounded checked:bg-(--color-purple) checked:border-(--color-purple) focus:outline-none transition-colors"
           />
         </div>
@@ -125,31 +135,27 @@ function CollectionPage() {
 }
 
 function TimeBlockGrid() {
-  const [events, setEvents] = useState([]);
-  const [currentDate, setCurrentDate] = useState(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return today;
-  });
+  const currentDate = useDateStore((state) => state.currentDate);
+  const setCurrentDate = useDateStore((state) => state.setCurrentDate);
+  const eventsByDate = useDateStore((state) => state.eventsByDate);
+  const addEvent = useDateStore((state) => state.addEvent);
+  const updateEvent = useDateStore((state) => state.updateEvent);
+  const deleteEvent = useDateStore((state) => state.deleteEvent);
+
+  // Get date string for current date
+  const dateString = currentDate.toISOString().split('T')[0];
+  const events = eventsByDate[dateString] || [];
 
   const handleAddEvent = (event) => {
-    const newEvent = {
-      ...event,
-      id: crypto.randomUUID(),
-    };
-    setEvents((prev) => [...prev, newEvent]);
+    addEvent(currentDate, event);
   };
 
   const handleUpdateEvent = (id, updates) => {
-    setEvents(
-      events.map((event) =>
-        event.id === id ? { ...event, ...updates } : event
-      )
-    );
+    updateEvent(currentDate, id, updates);
   };
 
   const handleDeleteEvent = (id) => {
-    setEvents(events.filter((event) => event.id !== id));
+    deleteEvent(currentDate, id);
   };
 
   return (
