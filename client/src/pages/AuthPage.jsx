@@ -114,11 +114,15 @@ function LoginForm({ switchToSignup }) {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/google`;
+    window.location.href = `${
+      import.meta.env.VITE_API_URL || 'http://localhost:3000'
+    }/api/auth/google`;
   };
 
   const handleGitHubLogin = () => {
-    window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/github`;
+    window.location.href = `${
+      import.meta.env.VITE_API_URL || 'http://localhost:3000'
+    }/api/auth/github`;
   };
 
   return (
@@ -243,11 +247,15 @@ function SignupForm({ switchToLogin }) {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/google`;
+    window.location.href = `${
+      import.meta.env.VITE_API_URL || 'http://localhost:3000'
+    }/api/auth/google`;
   };
 
   const handleGitHubLogin = () => {
-    window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/github`;
+    window.location.href = `${
+      import.meta.env.VITE_API_URL || 'http://localhost:3000'
+    }/api/auth/github`;
   };
 
   return (
@@ -361,7 +369,7 @@ function AuthPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="max-w-[1500px] flex-1 flex flex-col items-center justify-center gap-4 sm:gap-5 px-4 sm:px-6 py-6 sm:py-8">
+      <main className="max-w-[1500px] mx-auto flex-1 flex flex-col items-center justify-center gap-4 sm:gap-5 px-4 sm:px-6 py-6 sm:py-8">
         {isLogin ? (
           <LoginForm switchToSignup={switchToSignup} />
         ) : (
