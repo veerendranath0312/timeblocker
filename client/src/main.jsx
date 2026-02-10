@@ -6,7 +6,6 @@ import './index.css';
 import LandingPage from './pages/LandingPage.jsx';
 import AuthPage from './pages/AuthPage.jsx';
 import HomePage from './pages/HomePage.jsx';
-import ProtectedRoute from './components/ProtectedRoute.jsx';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -16,11 +15,7 @@ createRoot(document.getElementById('root')).render(
         <Route path="/auth" element={<AuthPage />} />
         <Route
           path="/home"
-          element={
-            <ProtectedRoute>
-              <HomePage />
-            </ProtectedRoute>
-          }
+          element={<HomePage />}
         />
       </Routes>
     </BrowserRouter>

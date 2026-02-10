@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { ChevronRight, ChevronLeft, Calendar, X } from 'lucide-react';
+import { EventCreationModal } from './EventCreationModal';
 import { cn } from '../lib/utils';
 
 const COLORS = [
@@ -28,9 +29,8 @@ export function ResourceSchedular({
   onUpdateEvent,
   onDeleteEvent,
 }) {
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState(null);
-  const [editingEventId, setEditingEventId] = useState(null);
+
+
   const [draggedEvent, setDraggedEvent] = useState(null);
   const [resizingEvent, setResizingEvent] = useState(null);
   const [enabledPlans, setEnabledPlans] = useState(() => {
@@ -41,6 +41,11 @@ export function ResourceSchedular({
   const [replanTimes, setReplanTimes] = useState({}); // { 'plan-b': '14:00', 'plan-c': '15:00' }
   const [crossedOffEvents, setCrossedOffEvents] = useState(new Set());
   const [contextMenu, setContextMenu] = useState(null); // { x, y, resourceIndex, time }
+
+  const [creationModalOpen, setCreationModalOpen] = useState(false);
+  const [newEventData, setNewEventData] = useState(null);
+  const [modalPosition, setModalPosition] = useState(null);
+
   const gridRef = useRef(null);
 
   const formatDate = (date) => {
@@ -77,6 +82,57 @@ export function ResourceSchedular({
 
   const dateString = currentDate.toISOString().split('T')[0];
   const todayEvents = events.filter((e) => e.date === dateString);
+
+  const handleCreateEventAtTime = (selectedTime, position) => {
+    // Create a default 30-minute event at the clicked time
+    const [hour, min] = selectedTime.split(':').map(Number);
+    const startMinutes = hour * 60 + min;
+    const endMinutes = startMinutes + 30;
+
+    const startHour = Math.floor(startMinutes / 60);
+    const startMin = startMinutes % 60;
+    const endHour = Math.floor(endMinutes / 60);
+    const endMin = endMinutes % 60;
+
+    const startTime = `${String(startHour).padStart(2, '0')}:${String(
+      startMin
+    ).padStart(2, '0')}`;
+    const endTime = `${String(endHour).padStart(2, '0')}:${String(
+      endMin
+    ).padStart(2, '0')}`;
+
+
+
+    setNewEventData({
+      title: '',
+      startTime,
+      endTime,
+      date: dateString,
+      resourceId: currentPlan,
+      color: COLORS[events.length % COLORS.length],
+    });
+
+    // Adjust position to not be exactly under cursor if possible, or just pass as is
+    setModalPosition(position);
+    setCreationModalOpen(true);
+    closeContextMenu();
+  };
+
+  const handleSaveNewEvent = (eventData) => {
+    if (eventData.id) {
+      onUpdateEvent(eventData.id, eventData);
+    } else {
+      onAddEvent(eventData);
+    }
+    setCreationModalOpen(false);
+    setNewEventData(null);
+  };
+
+  const handleDeleteEventFromModal = (eventId) => {
+    onDeleteEvent(eventId);
+    setCreationModalOpen(false);
+    setNewEventData(null);
+  };
 
   const handleReplanAtTime = (selectedTime, resourceIndex) => {
     const resource = resources[resourceIndex];
@@ -179,101 +235,9 @@ export function ResourceSchedular({
     return `${hour12}:${String(minutes).padStart(2, '0')} ${ampm}`;
   };
 
-  const handleGridMouseDown = (e, resourceIndex) => {
-    const resource = resources[resourceIndex];
-    if (!enabledPlans.has(resource.id)) return;
-    if (resource.id !== currentPlan) return;
 
-    // Check if we're in the disabled area (before replan time)
-    const replanTime = replanTimes[resource.id];
-    if (replanTime) {
-      const position = getPositionFromMouseEvent(e, resourceIndex);
-      if (position) {
-        const [replanHour, replanMin] = replanTime.split(':').map(Number);
-        const replanMinutes = replanHour * 60 + replanMin;
-        const clickMinutes = position.hour * 60 + position.minutes;
-        if (clickMinutes <= replanMinutes) return; // Disabled area (including exact time)
-      }
-    }
 
-    if (e.target.closest('.schedule-event')) return;
 
-    const position = getPositionFromMouseEvent(e, resourceIndex);
-    if (!position) return;
-
-    setIsDragging(true);
-    setDragStart(position);
-  };
-
-  const handleGridMouseUp = (e, resourceIndex) => {
-    const resource = resources[resourceIndex];
-    if (!enabledPlans.has(resource.id)) return;
-    if (resource.id !== currentPlan) return;
-
-    if (!isDragging || !dragStart) return;
-
-    // Check if we're in the disabled area (before replan time)
-    const replanTime = replanTimes[resource.id];
-    if (replanTime) {
-      const endPosition = getPositionFromMouseEvent(e, resourceIndex);
-      if (endPosition) {
-        const [replanHour, replanMin] = replanTime.split(':').map(Number);
-        const replanMinutes = replanHour * 60 + replanMin;
-        const endMinutes = endPosition.hour * 60 + endPosition.minutes;
-        // If either start or end is in disabled area, don't create event
-        const startMinutes = dragStart.hour * 60 + dragStart.minutes;
-        if (startMinutes <= replanMinutes || endMinutes <= replanMinutes) {
-          setIsDragging(false);
-          setDragStart(null);
-          return;
-        }
-      }
-    }
-
-    const endPosition = getPositionFromMouseEvent(e, resourceIndex);
-    if (!endPosition || endPosition.resourceIndex !== dragStart.resourceIndex) {
-      setIsDragging(false);
-      setDragStart(null);
-      return;
-    }
-
-    const startMinutes = dragStart.hour * 60 + dragStart.minutes;
-    const endMinutes = endPosition.hour * 60 + endPosition.minutes;
-
-    const actualStartMinutes = Math.min(startMinutes, endMinutes);
-    const actualEndMinutes = Math.max(startMinutes, endMinutes);
-
-    // Minimum 30 minutes
-    if (actualEndMinutes - actualStartMinutes < 30) {
-      setIsDragging(false);
-      setDragStart(null);
-      return;
-    }
-
-    const startHour = Math.floor(actualStartMinutes / 60);
-    const startMin = actualStartMinutes % 60;
-    const endHour = Math.floor(actualEndMinutes / 60);
-    const endMin = actualEndMinutes % 60;
-
-    const startTime = `${String(startHour).padStart(2, '0')}:${String(
-      startMin
-    ).padStart(2, '0')}`;
-    const endTime = `${String(endHour).padStart(2, '0')}:${String(
-      endMin
-    ).padStart(2, '0')}`;
-
-    onAddEvent({
-      title: 'New Event',
-      startTime,
-      endTime,
-      date: dateString,
-      resourceId: currentPlan,
-      color: COLORS[events.length % COLORS.length],
-    });
-
-    setIsDragging(false);
-    setDragStart(null);
-  };
 
   const handleEventMouseDown = (e, event) => {
     if (!enabledPlans.has(event.resourceId)) return;
@@ -281,7 +245,6 @@ export function ResourceSchedular({
     if (event.resourceId !== currentPlan) return; // Prevent interaction with previous plan events
 
     if (e.target.closest('.resize-handle')) return;
-    if (e.target.closest('input')) return;
     if (e.target.closest('button')) return;
 
     e.preventDefault();
@@ -529,8 +492,6 @@ export function ResourceSchedular({
                   !isEnabled && 'opacity-50 pointer-events-none'
                 )}
                 ref={idx === 0 ? gridRef : undefined}
-                onMouseDown={(e) => handleGridMouseDown(e, idx)}
-                onMouseUp={(e) => handleGridMouseUp(e, idx)}
                 onContextMenu={(e) => {
                   if (isCurrentPlan) {
                     handleContextMenu(e, idx);
@@ -608,41 +569,26 @@ export function ResourceSchedular({
 
                         <div className="flex items-start justify-between h-full p-2 gap-1">
                           <div className="flex-1 min-w-0">
-                            {editingEventId === event.id && canInteract ? (
-                              <input
-                                autoFocus
-                                value={event.title}
-                                onChange={(e) =>
-                                  onUpdateEvent(event.id, {
-                                    title: e.target.value,
-                                  })
+                            <div
+                              className={cn(
+                                'text-xs font-medium line-clamp-2',
+                                canInteract
+                                  ? 'cursor-pointer'
+                                  : 'cursor-not-allowed',
+                                isCrossedOff && 'line-through',
+                                isCrossedOff && 'opacity-50'
+                              )}
+                              onClick={(e) => {
+                                if (canInteract) {
+                                  e.stopPropagation();
+                                  setNewEventData(event);
+                                  setModalPosition({ x: e.clientX, y: e.clientY });
+                                  setCreationModalOpen(true);
                                 }
-                                onBlur={() => setEditingEventId(null)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter')
-                                    setEditingEventId(null);
-                                }}
-                                className="h-6 text-xs px-1 py-0 border-0 shadow-none bg-transparent"
-                              />
-                            ) : (
-                              <div
-                                className={cn(
-                                  'text-xs font-medium line-clamp-2',
-                                  canInteract
-                                    ? 'cursor-text'
-                                    : 'cursor-not-allowed',
-                                  isCrossedOff && 'line-through',
-                                  isCrossedOff && 'opacity-50'
-                                )}
-                                onClick={() => {
-                                  if (canInteract) {
-                                    setEditingEventId(event.id);
-                                  }
-                                }}
-                              >
-                                {event.title}
-                              </div>
-                            )}
+                              }}
+                            >
+                              {event.title}
+                            </div>
                             <div
                               className={cn(
                                 'text-[10px] opacity-70 mt-1',
@@ -653,17 +599,6 @@ export function ResourceSchedular({
                               {formatTime12Hour(event.endTime)}
                             </div>
                           </div>
-                          {canDelete && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onDeleteEvent(event.id);
-                              }}
-                              className="h-5 w-5 p-0 opacity-0 font-bold group-hover:opacity-100 transition-opacity shrink-0 cursor-pointer"
-                            >
-                              <X size={12} strokeWidth={2.5} />
-                            </button>
-                          )}
                         </div>
 
                         {canInteract && (
@@ -686,7 +621,7 @@ export function ResourceSchedular({
       {/* Context Menu */}
       {contextMenu && (
         <div
-          className="context-menu fixed z-50 bg-white border border-gray-300 rounded-md shadow-lg py-1 min-w-[150px]"
+          className="context-menu fixed z-50 bg-white border border-gray-300 rounded-md shadow-lg p-1 flex flex-col"
           style={{
             left: `${contextMenu.x}px`,
             top: `${contextMenu.y}px`,
@@ -694,14 +629,31 @@ export function ResourceSchedular({
         >
           <button
             onClick={() => {
+              handleCreateEventAtTime(contextMenu.time, { x: contextMenu.x, y: contextMenu.y });
+            }}
+            className="text-left px-2 py-1 text-xs hover:bg-gray-100 cursor-pointer rounded-sm"
+          >
+            Create Event ({formatTime12Hour(contextMenu.time)})
+          </button>
+          <button
+            onClick={() => {
               handleReplanAtTime(contextMenu.time, contextMenu.resourceIndex);
             }}
-            className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 cursor-pointer"
+            className="text-left px-2 py-1 text-xs hover:bg-gray-100 cursor-pointer rounded-sm"
           >
-            Re-Plan from {formatTime12Hour(contextMenu.time)}
+            Re-Plan ({formatTime12Hour(contextMenu.time)})
           </button>
         </div>
       )}
+      {/* Event Creation Modal */}
+      <EventCreationModal
+        isOpen={creationModalOpen}
+        onClose={() => setCreationModalOpen(false)}
+        onSave={handleSaveNewEvent}
+        onDelete={handleDeleteEventFromModal}
+        initialData={newEventData}
+        position={modalPosition}
+      />
     </div>
   );
 }

@@ -1,58 +1,40 @@
 import { create } from 'zustand';
-import { api } from '../lib/api';
+
+// Mock user for offline mode
+const MOCK_USER = {
+  id: 'local-user',
+  name: 'Local User',
+  email: 'local@example.com',
+};
 
 export const useAuthStore = create((set) => ({
-  user: null,
-  isAuthenticated: false,
-  isLoading: true,
+  user: MOCK_USER,
+  isAuthenticated: true,
+  isLoading: false,
 
-  // Initialize auth state
+  // Initialize auth state (always authenticated)
   init: async () => {
-    try {
-      const token = api.getToken();
-      if (!token) {
-        set({ user: null, isAuthenticated: false, isLoading: false });
-        return;
-      }
-
-      const { user } = await api.getCurrentUser();
-      set({ user, isAuthenticated: true, isLoading: false });
-    } catch {
-      api.setToken(null);
-      set({ user: null, isAuthenticated: false, isLoading: false });
-    }
+    // Check if we have a persisted user logic if needed, but for now just mock it
+    // set({ user: MOCK_USER, isAuthenticated: true, isLoading: false });
+    // Keep it simple
   },
 
-  // Signup
+  // Mock Signup
   signup: async (name, email, password) => {
-    try {
-      const { user } = await api.signup(name, email, password);
-      set({ user, isAuthenticated: true, isLoading: false });
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
-    }
+    set({ user: { name, email, id: 'local-user' }, isAuthenticated: true, isLoading: false });
+    return { success: true };
   },
 
-  // Login
+  // Mock Login
   login: async (email, password) => {
-    try {
-      const { user } = await api.login(email, password);
-      set({ user, isAuthenticated: true, isLoading: false });
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
-    }
+    set({ user: { name: 'Local User', email, id: 'local-user' }, isAuthenticated: true, isLoading: false });
+    return { success: true };
   },
 
-  // Logout
+  // Mock Logout
   logout: async () => {
-    try {
-      await api.logout();
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      set({ user: null, isAuthenticated: false, isLoading: false });
-    }
+    // In local mode, maybe just reset to login screen or do nothing? 
+    // For now, let's just simulate logout but `init` will log them back in if refreshed.
+    set({ user: null, isAuthenticated: false, isLoading: false });
   },
 }));
